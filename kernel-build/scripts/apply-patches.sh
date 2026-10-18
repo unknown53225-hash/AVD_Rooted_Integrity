@@ -62,6 +62,9 @@ echo "==> Applying Wild KSU<->SUSFS integration patch"
 ( cd drivers/kernelsu && patch -p2 -F 3 -N --no-backup-if-mismatch \
     -r /tmp/wild-ksu.rej -i "${WILD_KSU_PATCH}" )
 
+echo "==> Ensuring linux/compat.h is included for x86_64 compat_uptr_t"
+sed -i "1i #include <linux/compat.h>" drivers/kernelsu/runtime/ksud.h
+
 # ----------------------------------------------------------------------------
 # 4. Stage SUSFS source files
 # ----------------------------------------------------------------------------
