@@ -1,0 +1,62 @@
+name: Build KernelSU-Next AVD Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Target Architecture (x86_64 for PC Windows AVD, arm64 for Apple Silicon)'
+        required: true
+        default: 'x86_64'
+        type: choice
+        options:
+          - 'x86_64'
+          - 'arm64'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free Disk Space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             ca-certificates curl wget git xz-utils unzip             build-essential bc bison flex             libssl-dev openssl libelf-dev             kmod cpio rsync             python3 python3-pip             device-tree-compiler             zstd lz4             ccache             clang lld llvm llvm-dev             gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Fetch Sources
+        run: |
+          cd kernel-build
+          bash scripts/fetch-sources.sh
+
+      - name: Apply Kernel Patches
+        run: |
+          cd kernel-build
+          bash scripts/apply-patches.sh
+
+      - name: Build Kernel (${{ github.event.inputs.arch || 'x86_64' }})
+        env:
+          TARGET_ARCH: ${{ github.event.inputs.arch || 'x86_64' }}
+        run: |
+          cd kernel-build
+          bash scripts/build.sh
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-avd-${{ github.event.inputs.arch || 'x86_64' }}
+          path: |
+            kernel-build/out/*
+          if-no-files-found: error
