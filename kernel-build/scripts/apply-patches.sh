@@ -64,6 +64,9 @@ echo "==> Applying Wild KSU<->SUSFS integration patch"
 
 echo "==> Ensuring linux/compat.h is included for x86_64 compat_uptr_t"
 sed -i "1i #include <linux/compat.h>" drivers/kernelsu/runtime/ksud.h
+echo "==> Suppressing unused-result warnings in KernelSU"
+echo "ccflags-y += -Wno-unused-result -Wno-error=unused-result" >> drivers/kernelsu/Kbuild
+sed -i "s/strncpy_from_user(path, \*filename_user, sizeof(path));/(void)strncpy_from_user(path, *filename_user, sizeof(path));/" drivers/kernelsu/feature/sucompat.c
 
 # ----------------------------------------------------------------------------
 # 4. Stage SUSFS source files
