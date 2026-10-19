@@ -136,6 +136,10 @@ fi
 echo "==> Applying module vermagic bypass hack"
 sed -i '/bad_version:/{:a;n;/return 0;/{s/return 0;/return 1;/;b};ba}' \
     kernel/module/version.c
+echo "  - bypassing same_magic vermagic check in version.c"
+sed -i 's/return strcmp(amagic, bmagic) == 0;/return 1;/' kernel/module/version.c
+echo "  - bypassing module_sig_check in main.c"
+sed -i 's/err = module_sig_check(info, flags);/err = 0;/' kernel/module/main.c
 if grep -A 5 "bad_version:" kernel/module/version.c | grep -q "return 1;"; then
     echo "  - bypass hack applied to kernel/module/version.c"
 else
