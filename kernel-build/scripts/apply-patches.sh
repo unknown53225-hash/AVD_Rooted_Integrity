@@ -69,6 +69,9 @@ echo "ccflags-y += -Wno-unused-result -Wno-error=unused-result" >> drivers/kerne
 sed -i "s/strncpy_from_user(path, \*filename_user, sizeof(path));/(void)strncpy_from_user(path, *filename_user, sizeof(path));/" drivers/kernelsu/feature/sucompat.c
 echo "==> Fixing TIF_SECCOMP for x86_64 Linux 6.6"
 sed -i "s/if (likely(test_thread_flag(TIF_SECCOMP)))/if (1)/" drivers/kernelsu/policy/app_profile.c
+echo "==> Fixing kallsyms_lookup_name for selinux_hide.c"
+sed -i "1i #include <linux/kallsyms.h>\nextern unsigned long kallsyms_lookup_name(const char *name);" drivers/kernelsu/feature/selinux_hide.c
+sed -i "s/-Wno-error=unused-result/-Wno-error=unused-result -Wno-error=implicit-function-declaration/" drivers/kernelsu/Kbuild
 
 # ----------------------------------------------------------------------------
 # 4. Stage SUSFS source files
