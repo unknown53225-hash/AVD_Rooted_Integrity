@@ -66,6 +66,8 @@ CONFIG_LSM="landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparm
 CONFIG_LOCALVERSION="-android16-5-Pixel10Pro"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_DEFAULT_HOSTNAME="localhost"
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
 EOF
 make -j "${JOBS}" olddefconfig
 
