@@ -140,6 +140,33 @@ echo "  - bypassing same_magic vermagic check in version.c"
 sed -i 's/return strcmp(amagic, bmagic) == 0;/return 1;/' kernel/module/version.c
 echo "  - bypassing module_sig_check in main.c"
 sed -i 's/err = module_sig_check(info, flags);/err = 0;/' kernel/module/main.c
+echo "  - bypassing struct module size check in main.c"
+python3 - <<'PYEOF'
+with open('kernel/module/main.c', 'r') as f:
+    s = f.read()
+
+target = '''\tif (shdr->sh_size != sizeof(struct module)) {
+\t\tpr_err("module %s: .gnu.linkonce.this_module section size must match the kernel's built struct module size at run time\\n",
+\t\t       info->name ?: "(missing .modinfo section or name field)");
+\t\tgoto no_exec;
+\t}'''
+
+replacement = '''\tif (shdr->sh_size != sizeof(struct module)) {
+\t\tpr_warn("module %s: bypassing struct module size mismatch (%lu vs %zu)\\n",
+\t\t       info->name ?: "(missing .modinfo section or name field)", (unsigned long)shdr->sh_size, sizeof(struct module));
+\t\tshdr->sh_size = sizeof(struct module);
+\t}'''
+
+assert target in s, "Target block not found in kernel/module/main.c"
+s = s.replace(target, replacement, 1)
+warn_str = 'WARN_ON_ONCE(shdr->sh_size != sizeof(struct module))'
+assert warn_str in s, "WARN_ON_ONCE not found in kernel/module/main.c"
+s = s.replace(warn_str, '0', 1)
+
+with open('kernel/module/main.c', 'w') as f:
+    f.write(s)
+print('Successfully patched struct module size checks in kernel/module/main.c')
+PYEOF
 if grep -A 5 "bad_version:" kernel/module/version.c | grep -q "return 1;"; then
     echo "  - bypass hack applied to kernel/module/version.c"
 else
